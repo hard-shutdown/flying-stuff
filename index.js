@@ -1,11 +1,14 @@
 module.exports.player = function(player, serv) {
-  player.on('spawned', () => { // Say hey to the user!
+  player.on('connected', () => { // Say hey to the user!
+    
     player.chat(`Welcome to a ${serv.color.green}Flying Squid Server${serv.color.reset}!`);
+    var newScore = new Scoreboard("FLYING-SQUID", [{name: "testing", value: 100}, {name: "testing again", value: 20}]);
+    newScore.sendPackets(player)
   });
 }
 
 module.exports.server = function(serv) {
-  // Commands are added there only.
+
   serv.commands.add({
     base: 'random', // This is what the user starts with, so in this case: /random
     info: 'Returns a random number from 0 to num', // Description of the command
@@ -16,32 +19,9 @@ module.exports.server = function(serv) {
       else return parseInt(match[0]); // Otherwise, pass our number as an int to action()
     },
     action(maxNumber, ctx) { // ctx - context who is using it
-	  
       const number = Math.floor(Math.random()*(maxNumber+1)); // Generate our random number
-      if(ctx.player) {
-		    ctx.player.chat(`${serv.color.green}Your Random Number is: ${serv.color.reset}` + number); 
-        var score = new Scoreboard("FLYING-SQUID", [{name: "testing", value: 100}, {name: "testing again", value: 20}]);
-        score.sendPackets(ctx.player)
-        var interval = setInterval(() => {
-          var randomProperty = function (obj) {
-            var keys = Object.keys(obj);
-            return obj[keys[ keys.length * Math.random() << 0]];
-          };
-          score.updateTitle(`${randomProperty(serv.color).replace("&", "§")}FLYING-SQUID`, ctx.player)
-        }, 500);
-      } else serv.log(number); // If not, log it.
-    }
-  })
-  serv.commands.add({
-    base: 'sendpacket', // This is what the user starts with, so in this case: /random
-    info: 'Returns a random number from 0 to num', // Description of the command
-    usage: '/random <num>', // Usage displayed if parse() returns false (which means they used it incorrectly)
-    action(maxNumber, ctx) { // ctx - context who is using it
-      var a = maxNumber.split(":::")[0]
-      var b = maxNumber.split(":::")[1]
-      console.log(a, b)
-	  
-      ctx._client.write(a, JSON.parse(b))
+      if(ctx.player) ctx.player.chat(number); // If context of the player send it to him
+      else serv.log(number); // If not, log it.
     }
   })
 }
@@ -73,8 +53,33 @@ class Scoreboard {
     player._client.write("scoreboard_display_objective", packets.scoreboard_display_objective)
   }
 
+  sendPacketsAll = (serv) => {
+    serv.players.forEach((element) => {
+      this.sendPackets(element);
+    })
+  }
+
   updateTitle = (newTitle, player) => {
     this.title = newTitle;
     this.sendPackets(player)
+  }
+
+  updateTitleAll = (newTitle, serv) => {
+    this,title = newTitle;
+    serv.players.forEach((element) => {
+      this.sendPackets(element);
+    })
+  }
+
+  addObjective = (newObj) => {
+    this.objectives.push(newObj);
+  }
+
+  removeObjective = (value) => {
+    this.objectives.forEach((element, index) => {
+      if(element.value == value) {
+        this.objectives.delete(index)
+      }
+    })
   }
 }
